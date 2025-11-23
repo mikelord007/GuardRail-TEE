@@ -43,15 +43,22 @@ echo '{}' > secrets.json
 cat secrets.json | socat - VSOCK-CONNECT:$ENCLAVE_CID:7777
 socat TCP4-LISTEN:3000,reuseaddr,fork VSOCK-CONNECT:$ENCLAVE_CID:3000 &
 
-# Add api.weatherapi.com to vsock-proxy allowlist if not already present
-if ! grep -q "api.weatherapi.com" /etc/nitro_enclaves/vsock-proxy.yaml 2>/dev/null; then
-    echo "- {address: api.weatherapi.com, port: 443}" | sudo tee -a /etc/nitro_enclaves/vsock-proxy.yaml
-fi
+# Add Hugging Face endpoints to vsock-proxy allowlist if not already present
+for endpoint in huggingface.co cdn-lfs.huggingface.co hf.co; do
+    if ! grep -q "$endpoint" /etc/nitro_enclaves/vsock-proxy.yaml 2>/dev/null; then
+        echo "- {address: $endpoint, port: 443}" | sudo tee -a /etc/nitro_enclaves/vsock-proxy.yaml
+    fi
+done
 
-# Start vsock-proxy for api.weatherapi.com on port 8101
-# This forwards traffic from the enclave (VSOCK port 8101) to api.weatherapi.com:443
-echo "Starting vsock-proxy on port 8101..."
-sudo vsock-proxy 8101 api.weatherapi.com 443 --config /etc/nitro_enclaves/vsock-proxy.yaml &
+# Start vsock-proxy for Hugging Face endpoints
+# This forwards traffic from the enclave (VSOCK ports) to Hugging Face:443
+echo "Starting vsock-proxy for Hugging Face endpoints..."
+PORT=8101
+for endpoint in huggingface.co cdn-lfs.huggingface.co hf.co; do
+    echo "Starting vsock-proxy on port $PORT for $endpoint..."
+    sudo vsock-proxy $PORT $endpoint 443 --config /etc/nitro_enclaves/vsock-proxy.yaml &
+    PORT=$((PORT+1))
+done
 sleep 2
 
 # Additional port configurations will be added here by configure_enclave.sh if needed

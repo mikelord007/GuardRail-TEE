@@ -108,16 +108,15 @@ RUN cp /src/nautilus-server/bcs.py initramfs/
 RUN cp /src/nautilus-server/traffic_forwarder.py initramfs/
 RUN cp /src/nautilus-server/run.sh initramfs/
 
-# Copy apps directory
-RUN mkdir -p initramfs/apps
-RUN cp -r /src/nautilus-server/apps/* initramfs/apps/
+# Copy guardrail directory
+RUN mkdir -p initramfs/guardrail
+RUN cp -r /src/nautilus-server/guardrail/* initramfs/guardrail/ 2>/dev/null || true
 
-# Copy allowed_endpoints.yaml files if they exist
-RUN mkdir -p initramfs/apps/weather-example initramfs/apps/twitter-example initramfs/apps/seal-example
-RUN cp /src/nautilus-server/apps/weather-example/allowed_endpoints.yaml initramfs/apps/weather-example/ 2>/dev/null || true
-RUN cp /src/nautilus-server/apps/twitter-example/allowed_endpoints.yaml initramfs/apps/twitter-example/ 2>/dev/null || true
-RUN cp /src/nautilus-server/apps/seal-example/allowed_endpoints.yaml initramfs/apps/seal-example/ 2>/dev/null || true
-RUN cp /src/nautilus-server/apps/seal-example/seal_config.yaml initramfs/apps/seal-example/ 2>/dev/null || true
+# Copy guardrail app files
+RUN mkdir -p initramfs/guardrail
+RUN cp /src/nautilus-server/guardrail/allowed_endpoints.yaml initramfs/guardrail/ 2>/dev/null || true
+RUN cp /src/nautilus-server/guardrail/test_suite.json initramfs/guardrail/ 2>/dev/null || true
+RUN cp /src/nautilus-server/guardrail/scoring_schema.json initramfs/guardrail/ 2>/dev/null || true
 
 # Install Python packages into initramfs
 # Copy pre-installed packages from temporary location

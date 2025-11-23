@@ -40,8 +40,7 @@ fi
 if [ -z "$1" ]; then
     echo "Error: APP argument is required."
     echo "Usage: ./configure_enclave.sh <APP>"
-    echo "Example: ./configure_enclave.sh twitter-example"
-    echo "Example: ./configure_enclave.sh weather-example"
+    echo "Example: ./configure_enclave.sh guardrail"
     echo ""
     echo "For more information, run: ./configure_enclave.sh --help"
     exit 1
@@ -61,7 +60,7 @@ AMI_ID="${AMI_ID:-ami-085ad6ae776d8f09c}"
 API_ENV_VAR_NAME="${API_ENV_VAR_NAME:-API_KEY}"
 
 ENCLAVE_APP="${1}"
-ALLOWLIST_PATH="src/nautilus-server/apps/${ENCLAVE_APP}/allowed_endpoints.yaml"
+ALLOWLIST_PATH="src/nautilus-server/${ENCLAVE_APP}/allowed_endpoints.yaml"
 
 ############################
 # Cleanup Old Files
@@ -129,21 +128,14 @@ else
 fi
 
 #########################################
-# Decide about secrets (3 scenarios)
+# Decide about secrets
 #########################################
-# Check if this is the seal example - skip AWS secret prompts entirely
-if [[ "$ENCLAVE_APP" == "seal-example" ]]; then
-    echo "Seal example detected. Configuring without AWS secrets..."
-    USE_SECRET="n"
-    IS_SEAL_EXAMPLE=true
-else
-    read -p "Do you want to use a secret? (y/n): " USE_SECRET
+read -p "Do you want to use a secret? (y/n): " USE_SECRET
 
-    # Validate input
-    if [[ ! "$USE_SECRET" =~ ^[YyNn]$ ]]; then
-        echo "Error: Please enter 'y' or 'n'"
-        exit 1
-    fi
+# Validate input
+if [[ ! "$USE_SECRET" =~ ^[YyNn]$ ]]; then
+    echo "Error: Please enter 'y' or 'n'"
+    exit 1
 fi
 
 if [[ "$USE_SECRET" =~ ^[Yy]$ ]]; then
@@ -389,53 +381,19 @@ else
         sed -i '/echo.*secrets\.json/d' expose_enclave.sh 2>/dev/null || true
     fi
     
-    # Handle seal example specifically
-    if [ "$IS_SEAL_EXAMPLE" = true ]; then
-        echo "Configuring seal example..."
-        
-        # Add empty secrets.json (required by run.sh which waits for it on VSOCK)
-        if [[ "$(uname)" == "Darwin" ]]; then
-            sed -i '' "/# Secrets-block/a\\
-# Seal example: create empty secrets.json (required by run.sh)\\
-echo 'Creating empty secrets.json for seal example...'\\
+    # Regular no-secret configuration
+    echo "Standard no-secret configuration applied."
+    
+    # Add empty secrets.json for compatibility with run.sh
+    if [[ "$(uname)" == "Darwin" ]]; then
+        sed -i '' "/# Secrets-block/a\\
+# No secrets: create empty secrets.json for compatibility\\
 echo '{}' > secrets.json\\
 " expose_enclave.sh
-            
-            # Expose port 3001 for localhost-only access to seal init endpoint
-            sed -i '' "/socat TCP4-LISTEN:3000,reuseaddr,fork VSOCK-CONNECT:\$ENCLAVE_CID:3000 &/a\\
-\\
-# Seal example: Expose port 3001 for localhost-only access to init endpoint\\
-echo \"Exposing seal init endpoint on localhost:3001...\"\\
-socat TCP4-LISTEN:3001,bind=127.0.0.1,reuseaddr,fork VSOCK-CONNECT:\$ENCLAVE_CID:3001 &\\
-" expose_enclave.sh
-        else
-            sed -i "/# Secrets-block/a\\
-# Seal example: create empty secrets.json (required by run.sh)\\
-echo 'Creating empty secrets.json for seal example...'\\
-echo '{}' > secrets.json" expose_enclave.sh
-            
-            # Expose port 3001 for localhost-only access to seal init endpoint
-            sed -i "/socat TCP4-LISTEN:3000,reuseaddr,fork VSOCK-CONNECT:\$ENCLAVE_CID:3000 &/a\\
-\\
-# Seal example: Expose port 3001 for localhost-only access to init endpoint\\
-echo \"Exposing seal init endpoint on localhost:3001...\"\\
-socat TCP4-LISTEN:3001,bind=127.0.0.1,reuseaddr,fork VSOCK-CONNECT:\$ENCLAVE_CID:3001 &" expose_enclave.sh
-        fi
     else
-        # Regular no-secret configuration
-        echo "Standard no-secret configuration applied."
-        
-        # Add empty secrets.json for compatibility with run.sh
-        if [[ "$(uname)" == "Darwin" ]]; then
-            sed -i '' "/# Secrets-block/a\\
-# No secrets: create empty secrets.json for compatibility\\
-echo '{}' > secrets.json\\
-" expose_enclave.sh
-        else
-            sed -i "/# Secrets-block/a\\
+        sed -i "/# Secrets-block/a\\
 # No secrets: create empty secrets.json for compatibility\\
 echo '{}' > secrets.json" expose_enclave.sh
-        fi
     fi
 fi
 
@@ -570,22 +528,6 @@ rm "$tmp_traffic"
 
 echo "updated run.sh"
 
-# Add seal-specific vsock listener for port 3001
-if [ "$IS_SEAL_EXAMPLE" = true ]; then
-    echo "Adding seal-specific port 3001 vsock listener to run.sh..."
-    if [[ "$(uname)" == "Darwin" ]]; then
-        sed -i '' '/socat VSOCK-LISTEN:3000,reuseaddr,fork TCP:localhost:3000 &/a\
-\
-# For seal-example: Listen on VSOCK Port 3001 and forward to localhost 3001\
-socat VSOCK-LISTEN:3001,reuseaddr,fork TCP:localhost:3001 &' src/nautilus-server/run.sh
-    else
-        sed -i '/socat VSOCK-LISTEN:3000,reuseaddr,fork TCP:localhost:3000 &/a\
-\
-# For seal-example: Listen on VSOCK Port 3001 and forward to localhost 3001\
-socat VSOCK-LISTEN:3001,reuseaddr,fork TCP:localhost:3001 &' src/nautilus-server/run.sh
-    fi
-    echo "Added port 3001 vsock listener for seal example"
-fi
 
 ############################
 # Create or Use Security Group

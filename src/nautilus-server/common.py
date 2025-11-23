@@ -241,21 +241,21 @@ def load_allowed_endpoints_yaml() -> Optional[str]:
             pass
     
     # Try built-in endpoints based on app feature
-    app_name = os.environ.get("ENCLAVE_APP", "weather-example")
+    app_name = os.environ.get("ENCLAVE_APP", "guardrail")
     
     # List of paths to try (in order of preference)
     paths_to_try = []
     
-    # 1. Enclave path: /apps/{app}/allowed_endpoints.yaml (when running from /)
-    paths_to_try.append(f"/apps/{app_name}/allowed_endpoints.yaml")
+    # 1. Enclave path: /{app}/allowed_endpoints.yaml (when running from /)
+    paths_to_try.append(f"/{app_name}/allowed_endpoints.yaml")
     
-    # 2. Relative from current file: apps/{app}/allowed_endpoints.yaml (host, from src/nautilus-server)
-    paths_to_try.append(os.path.join(current_dir, f"apps/{app_name}/allowed_endpoints.yaml"))
+    # 2. Relative from current file: {app}/allowed_endpoints.yaml (host, from src/nautilus-server)
+    paths_to_try.append(os.path.join(current_dir, f"{app_name}/allowed_endpoints.yaml"))
     
-    # 3. Absolute from repo root: src/nautilus-server/apps/{app}/allowed_endpoints.yaml
+    # 3. Absolute from repo root: src/nautilus-server/{app}/allowed_endpoints.yaml
     parent_dir = os.path.dirname(current_dir)  # Should be 'src' when in src/nautilus-server
     repo_root = os.path.dirname(parent_dir) if parent_dir else current_dir
-    paths_to_try.append(os.path.join(repo_root, f"src/nautilus-server/apps/{app_name}/allowed_endpoints.yaml"))
+    paths_to_try.append(os.path.join(repo_root, f"src/nautilus-server/{app_name}/allowed_endpoints.yaml"))
     
     # Try each path
     for path in paths_to_try:

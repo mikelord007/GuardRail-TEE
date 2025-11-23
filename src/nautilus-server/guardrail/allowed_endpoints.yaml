@@ -1,0 +1,5 @@
+endpoints:
+  - huggingface.co
+  - cdn-lfs.huggingface.co
+  - hf.co
+
