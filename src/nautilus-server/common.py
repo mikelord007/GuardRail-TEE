@@ -225,8 +225,8 @@ def load_allowed_endpoints_yaml() -> Optional[str]:
     """Load allowed_endpoints.yaml from file or built-in.
     
     Tries multiple paths to support both host and enclave environments:
-    - Host: src/nautilus-server/apps/{app}/allowed_endpoints.yaml
-    - Enclave: /apps/{app}/allowed_endpoints.yaml
+    - Host: src/nautilus-server/{app}/allowed_endpoints.yaml
+    - Enclave: /{app}/allowed_endpoints.yaml
     """
     # Get the directory where this file is located
     current_dir = os.path.dirname(os.path.abspath(__file__))
