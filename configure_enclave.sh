@@ -7,7 +7,7 @@
 show_help() {
     echo "configure_enclave.sh - Launch AWS EC2 instance with Nitro Enclaves and configure allowed endpoints. "
     echo ""
-    echo "This script launches an AWS EC2 instance (m5.xlarge) with Nitro Enclaves enabled."
+    echo "This script launches an AWS EC2 instance (m5.2xlarge) with Nitro Enclaves enabled."
     echo "By default, it uses the AMI ami-085ad6ae776d8f09c, which works in us-east-1."
     echo "If you change the REGION, you must also supply a valid AMI for that region."
     echo ""
@@ -17,7 +17,7 @@ show_help() {
     echo "    all traffics needs to be preconfigured for traffic forwarding."
     echo "  - AWS CLI is installed and configured with proper credentials"
     echo "  - The environment variable KEY_PAIR is set (e.g., export KEY_PAIR=my-key)"
-    echo "  - The instance type 'm5.xlarge' must be supported in your account/region for Nitro Enclaves"
+    echo "  - The instance type 'm5.2xlarge' must be supported in your account/region for Nitro Enclaves"
     echo ""
     echo "Usage:"
     echo "  export KEY_PAIR=<your-key-pair-name>"
@@ -559,7 +559,7 @@ echo "Launching EC2 instance with Nitro Enclaves enabled..."
 INSTANCE_ID=$(aws ec2 run-instances \
   --region "$REGION" \
   --image-id "$AMI_ID" \
-  --instance-type m5.xlarge \
+  --instance-type m5.2xlarge \
   --key-name "$KEY_PAIR" \
   --user-data file://user-data.sh \
   --block-device-mappings '[{"DeviceName":"/dev/xvda","Ebs":{"VolumeSize":200}}]' \
