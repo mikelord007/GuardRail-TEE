@@ -36,14 +36,9 @@ if [[ "$1" == "-h" || "$1" == "--help" ]]; then
     exit 0
 fi
 
-# Check for required APP argument
+# Set default APP argument to "guardrail" if not provided
 if [ -z "$1" ]; then
-    echo "Error: APP argument is required."
-    echo "Usage: ./configure_enclave.sh <APP>"
-    echo "Example: ./configure_enclave.sh guardrail"
-    echo ""
-    echo "For more information, run: ./configure_enclave.sh --help"
-    exit 1
+    set -- "guardrail"
 fi
 
 ############################
@@ -530,41 +525,31 @@ echo "updated run.sh"
 
 
 ############################
-# Create or Use Security Group
+# Create Security Group
 ############################
-SECURITY_GROUP_NAME="instance-script-sg"
+SECURITY_GROUP_NAME="security-group-${FINAL_INSTANCE_NAME}"
 
-SECURITY_GROUP_ID=$(aws ec2 describe-security-groups \
+echo "Creating security group $SECURITY_GROUP_NAME..."
+SECURITY_GROUP_ID=$(aws ec2 create-security-group \
   --region "$REGION" \
-  --group-names "$SECURITY_GROUP_NAME" \
-  --query "SecurityGroups[0].GroupId" \
-  --output text 2>/dev/null)
+  --group-name "$SECURITY_GROUP_NAME" \
+  --description "Security group allowing SSH (22), HTTPS (443), and port 3000" \
+  --query "GroupId" --output text)
 
-if [ "$SECURITY_GROUP_ID" = "None" ] || [ -z "$SECURITY_GROUP_ID" ]; then
-  echo "Creating security group $SECURITY_GROUP_NAME..."
-  SECURITY_GROUP_ID=$(aws ec2 create-security-group \
-    --region "$REGION" \
-    --group-name "$SECURITY_GROUP_NAME" \
-    --description "Security group allowing SSH (22), HTTPS (443), and port 3000" \
-    --query "GroupId" --output text)
-
-  # Ensure that the security group is created successfully
-  if [ $? -ne 0 ]; then
-    echo "Error creating security group."
-    exit 1
-  fi
-
-  aws ec2 authorize-security-group-ingress --region "$REGION" \
-    --group-id "$SECURITY_GROUP_ID" --protocol tcp --port 22 --cidr 0.0.0.0/0
-
-  aws ec2 authorize-security-group-ingress --region "$REGION" \
-    --group-id "$SECURITY_GROUP_ID" --protocol tcp --port 443 --cidr 0.0.0.0/0
-
-  aws ec2 authorize-security-group-ingress --region "$REGION" \
-    --group-id "$SECURITY_GROUP_ID" --protocol tcp --port 3000 --cidr 0.0.0.0/0
-else
-  echo "Using existing security group $SECURITY_GROUP_NAME ($SECURITY_GROUP_ID)"
+# Ensure that the security group is created successfully
+if [ $? -ne 0 ]; then
+  echo "Error creating security group."
+  exit 1
 fi
+
+aws ec2 authorize-security-group-ingress --region "$REGION" \
+  --group-id "$SECURITY_GROUP_ID" --protocol tcp --port 22 --cidr 0.0.0.0/0
+
+aws ec2 authorize-security-group-ingress --region "$REGION" \
+  --group-id "$SECURITY_GROUP_ID" --protocol tcp --port 443 --cidr 0.0.0.0/0
+
+aws ec2 authorize-security-group-ingress --region "$REGION" \
+  --group-id "$SECURITY_GROUP_ID" --protocol tcp --port 3000 --cidr 0.0.0.0/0
 
 ############################
 # Launch EC2
